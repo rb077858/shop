@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מוצר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+<main><div class="wrap">
+<div id="root"><p class="muted">טוען…</p></div>
+</div></main>
+<script type="module">
+import { getConfig, api, money, esc, getCart, saveCart, addToCart, sanitize } from '/assets/app.js';
+
+const cfg = await getConfig();
+const id = new URLSearchParams(location.search).get("id");
+const root = document.getElementById("root");
+let product;
+try { ({ product } = await api(`/api/products/${encodeURIComponent(id)}`)); }
+catch { root.innerHTML = `<p class="empty">המוצר לא נמצא. <a href="/">חזרה לחנות</a></p>`; throw 0; }
+document.title = `${product.title} | ${cfg.storeName}`;
+
+const variants = product.variants || [];
+const optionNames = [...new Set(variants.flatMap((v) => Object.keys(v.options || {})))];
+const selected = {};
+if (variants.length === 1) Object.assign(selected, variants[0].options);
+
+const matchVariant = () => variants.length === 1 ? variants[0] :
+  variants.find((v) => optionNames.every((n) => v.options?.[n] === selected[n]));
+const available = (name, value) => variants.some((v) => !v.disabled && v.options?.[name] === value &&
+  optionNames.every((n) => n === name || !selected[n] || v.options?.[n] === selected[n]));
+
+const images = [...product.images];
+root.innerHTML = `<div class="product">
+  <div class="gallery"><img class="main" id="mainImg" src="${esc(images[0] || "")}" alt="">
+    <div class="thumbs" id="thumbs"></div></div>
+  <div>
+    <h1>${esc(product.title)}</h1>
+    <div class="price" id="price"></div>
+    <div id="options"></div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap">
+      <div class="qty"><button type="button" id="minus">−</button><input id="qty" value="1" inputmode="numeric"><button type="button" id="plus">+</button></div>
+      <button class="btn" id="add">הוספה לעגלה</button>
+    </div>
+    <p class="error" id="err" hidden></p>
+    <ul class="perks"><li>🚚 משלוח עד הבית עם מספר מעקב</li><li>🔒 תשלום מאובטח ב-PayPal או בכרטיס אשראי</li><li>↩️ החזר כספי מלא אם המוצר לא הגיע</li></ul>
+  </div></div>
+  <section class="description"><h2>תיאור המוצר</h2><div id="desc"></div></section>`;
+
+document.getElementById("desc").innerHTML = sanitize(product.description) || "<p class=\"muted\">אין תיאור.</p>";
+const mainImg = document.getElementById("mainImg");
+const showImage = (src) => { mainImg.src = src; document.querySelectorAll("#thumbs img").forEach((t) => t.classList.toggle("on", t.src === src)); };
+document.getElementById("thumbs").innerHTML = images.map((src, i) => `<img src="${esc(src)}" class="${i ? "" : "on"}" alt="">`).join("");
+document.getElementById("thumbs").onclick = (e) => { if (e.target.tagName === "IMG") showImage(e.target.src); };
+
+function render() {
+  const v = matchVariant();
+  const price = v?.price ?? product.price;
+  document.getElementById("price").innerHTML = money(price, cfg.currency) +
+    (product.compareAtPrice > price ? `<span class="compare">${money(product.compareAtPrice, cfg.currency)}</span>` : "");
+  if (variants.length > 1) {
+    document.getElementById("options").innerHTML = optionNames.map((name) => {
+      const values = [...new Set(variants.map((x) => x.options?.[name]).filter(Boolean))];
+      return `<div class="opt-group"><div class="label">${esc(name)}${selected[name] ? ": " + esc(selected[name]) : ""}</div><div class="opts">` +
+        values.map((val) => {
+          const img = variants.find((x) => x.options?.[name] === val && x.image)?.image;
+          return `<button type="button" class="opt ${selected[name] === val ? "on" : ""}" data-n="${esc(name)}" data-v="${esc(val)}" ${available(name, val) ? "" : "disabled"}>${img ? `<img src="${esc(img)}" alt="">` : ""}${esc(val)}</button>`;
+        }).join("") + `</div></div>`;
+    }).join("");
+  }
+  if (v?.image) showImage(v.image);
+}
+document.getElementById("options").onclick = (e) => {
+  const b = e.target.closest(".opt"); if (!b || b.disabled) return;
+  selected[b.dataset.n] = selected[b.dataset.n] === b.dataset.v ? undefined : b.dataset.v;
+  render();
+};
+const qty = document.getElementById("qty");
+const setQty = (n) => (qty.value = Math.max(1, Math.min(20, Number(n) || 1)));
+document.getElementById("minus").onclick = () => setQty(+qty.value - 1);
+document.getElementById("plus").onclick = () => setQty(+qty.value + 1);
+qty.onchange = () => setQty(qty.value);
+document.getElementById("add").onclick = () => {
+  const err = document.getElementById("err");
+  const v = matchVariant();
+  if (variants.length && (!v || v.disabled)) { err.hidden = false; err.textContent = "נא לבחור " + optionNames.filter((n) => !selected[n]).join(", "); return; }
+  err.hidden = true;
+  addToCart({ productId: product.id, variantId: v?.id || null, qty: +qty.value, title: product.title,
+    variantName: v && variants.length > 1 ? v.name : "", price: v?.price ?? product.price, image: v?.image || images[0] || "" });
+  location.href = "/cart.html";
+};
+render();
+
+</script>
+</body>
+</html>

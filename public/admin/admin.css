@@ -1,0 +1,21 @@
+table.list { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+table.list th, table.list td { text-align: start; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.list tr.click { cursor: pointer; }
+table.list tr.click:hover { background: var(--bg); }
+table.list img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; background: var(--border); }
+.pill.paid { background: #fde68a; color: #713f12; }
+.pill.ordered { background: #bfdbfe; color: #1e3a8a; }
+.pill.shipped { background: #c7d2fe; color: #312e81; }
+.pill.delivered { background: #bbf7d0; color: #14532d; }
+.pill.refunded, .pill.cancelled { background: #fecaca; color: #7f1d1d; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.stack { display: grid; gap: 12px; }
+pre.addr { background: var(--bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; white-space: pre-wrap; direction: ltr; text-align: left; margin: 0; font-family: ui-monospace, monospace; font-size: 14px; }
+.events { font-size: 13px; color: var(--muted); max-height: 240px; overflow: auto; }
+.vt input { padding: 6px 8px; }
+.toast { position: fixed; bottom: 20px; inset-inline-start: 20px; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 99; }
+.ok { color: #16a34a; } .bad { color: var(--danger); }
+.overflow { overflow-x: auto; }
+@media (max-width: 800px) { .two { grid-template-columns: 1fr; } .hide-sm { display: none; } }

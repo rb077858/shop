@@ -1,0 +1,30 @@
+name = "reembir-shop"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+# צור את בסיס הנתונים עם: npx wrangler d1 create reembir-shop
+# והדבק כאן את ה-database_id שקיבלת.
+[[d1_databases]]
+binding = "DB"
+database_name = "reembir-shop"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[vars]
+STORE_NAME = "Reembir"
+SITE_URL = "https://reembir.com"
+STORE_CURRENCY = "ILS"
+SHIP_TO_COUNTRY = "IL"
+# רשימת מדינות שאליהן מותר לשלוח, מופרדות בפסיק (למשל "IL,US,GB")
+SHIP_COUNTRIES = "IL"
+# שער דולר -> מטבע החנות, ומכפיל רווח למחיר מוצע בייבוא
+USD_RATE = "3.7"
+PRICE_MULTIPLIER = "2.5"
+# משלוח: 0 = חינם. FREE_SHIPPING_OVER = סכום שמעליו המשלוח חינם (0 = לא פעיל)
+SHIPPING_FEE = "0"
+FREE_SHIPPING_OVER = "0"
+PAYPAL_ENV = "live"
+CONTACT_EMAIL = "support@reembir.com"
+# true = הזמנה נשלחת אוטומטית לאליאקספרס מיד אחרי תשלום
+AE_AUTO_ORDER = "false"
+# true = אליאקספרס ינסה לחייב אוטומטית את אמצעי התשלום השמור בחשבון שלך
+AE_TRY_TO_PAY = "false"

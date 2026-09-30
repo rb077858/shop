@@ -1,0 +1,13 @@
+# העתק לקובץ .dev.vars לפיתוח מקומי. בפרודקשן הגדר אותם כ-Secrets ב-Cloudflare.
+ADMIN_PASSWORD=change-me-to-a-long-random-password
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_WEBHOOK_ID=
+AE_APP_KEY=
+AE_APP_SECRET=
+RESEND_API_KEY=
+EMAIL_FROM=Reembir <orders@reembir.com>
+ADMIN_EMAIL=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+PAYPAL_ENV=sandbox

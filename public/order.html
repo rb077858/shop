@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>סטטוס הזמנה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+<main><div class="wrap">
+<div id="root"><p class="muted">טוען…</p></div>
+</div></main>
+<script type="module">
+import { getConfig, api, money, esc, getCart, saveCart, addToCart, sanitize } from '/assets/app.js';
+
+const cfg = await getConfig();
+const q = new URLSearchParams(location.search);
+const root = document.getElementById("root");
+const STEPS = [["paid", "התשלום התקבל"], ["ordered", "בטיפול אצל הספק"], ["shipped", "נשלח"], ["delivered", "נמסר"]];
+const LABEL = { paid: "התשלום התקבל", ordered: "בטיפול אצל הספק", shipped: "נשלח", delivered: "נמסר", cancelled: "בוטל", refunded: "הוחזר כספית", pending: "ממתין לתשלום" };
+try {
+  const { order: o } = await api(`/api/order?id=${encodeURIComponent(q.get("id") || "")}&t=${encodeURIComponent(q.get("t") || "")}`);
+  const idx = STEPS.findIndex(([s]) => s === o.status);
+  root.innerHTML = `${q.get("new") ? `<div class="notice"><b>תודה רבה! ההזמנה התקבלה.</b> שלחנו אישור לכתובת ${esc(o.email)}. שמרו את הקישור לדף זה למעקב.</div>` : ""}
+  <h1>הזמנה ${esc(o.id)}</h1>
+  <div class="steps">${idx >= 0 ? STEPS.map(([s, l], i) => `<span class="step ${i <= idx ? "on" : ""}">${l}</span>`).join("") : `<span class="step on">${LABEL[o.status] || o.status}</span>`}</div>
+  ${o.tracking.length ? `<div class="panel" style="margin-bottom:20px"><h2 style="margin-top:0">מעקב משלוח</h2>${o.tracking.map((t) => `<p><a class="btn small" href="${esc(t.url)}" target="_blank" rel="noopener">מעקב: ${esc(t.number)}</a> <span class="muted">${esc(t.carrier || "")}</span></p>`).join("")}<p class="muted">המעקב מתעדכן לרוב תוך 2–5 ימים מרגע השליחה.</p></div>` : ""}
+  <div class="cart-layout">
+    <div class="panel">${o.items.map((i) => `<div class="line"><img src="${esc(i.image)}" alt=""><div>${esc(i.title)}<div class="meta">${esc(i.variantName || "")} × ${i.qty}</div></div><div>${money(i.price * i.qty, o.currency)}</div></div>`).join("")}
+      <div class="totals" style="margin-top:12px"><div><span>משלוח</span><span>${o.shipping ? money(o.shipping, o.currency) : "חינם"}</span></div><div class="grand"><span>סה״כ</span><span>${money(o.total, o.currency)}</span></div></div></div>
+    <div class="panel"><h2 style="margin-top:0">כתובת למשלוח</h2><p>${esc(o.name)}<br>${esc(o.address.address1)} ${esc(o.address.address2 || "")}<br>${esc(o.address.city)} ${esc(o.address.zip || "")}<br>${esc(o.address.country)}<br>${esc(o.phone)}</p>
+    <p class="muted">שאלות? <a href="/contact.html">צרו קשר</a> וציינו את מספר ההזמנה.</p></div>
+  </div>`;
+} catch (e) { root.innerHTML = `<p class="empty">${esc(e.message)} — <a href="/track.html">חיפוש הזמנה</a></p>`; }
+
+</script>
+</body>
+</html>

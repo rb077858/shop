@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reembir — חנות אונליין</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+<main><div class="wrap">
+<section class="hero"><h1>המוצרים שלנו</h1><p>משלוח עד הבית · תשלום מאובטח ב-PayPal · מעקב משלוח מלא</p></section>
+<div id="grid" class="grid"></div>
+</div></main>
+<script type="module">
+import { getConfig, api, money, esc, getCart, saveCart, addToCart, sanitize } from '/assets/app.js';
+
+const [cfg, { products }] = await Promise.all([getConfig(), api("/api/products")]);
+document.title = cfg.storeName;
+const grid = document.getElementById("grid");
+if (!products.length) grid.outerHTML = `<p class="empty">עדיין אין מוצרים בחנות.</p>`;
+else grid.innerHTML = products.map((p) => `<a class="card" href="/product.html?id=${encodeURIComponent(p.id)}">
+  <img src="${esc(p.image)}" alt="" loading="lazy">
+  <div class="info"><div class="title">${esc(p.title)}</div>
+  <div class="price">${money(p.price, cfg.currency)}${p.compareAtPrice > p.price ? `<span class="compare">${money(p.compareAtPrice, cfg.currency)}</span>` : ""}</div></div></a>`).join("");
+
+</script>
+</body>
+</html>

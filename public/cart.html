@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>עגלת קניות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+<main><div class="wrap">
+<h1>עגלת קניות</h1>
+<div id="root"></div>
+</div></main>
+<script type="module">
+import { getConfig, api, money, esc, getCart, saveCart, addToCart, sanitize } from '/assets/app.js';
+
+const cfg = await getConfig();
+const root = document.getElementById("root");
+const COUNTRY_NAMES = { IL: "ישראל", US: "ארצות הברית", GB: "בריטניה", CA: "קנדה", DE: "גרמניה", FR: "צרפת", AU: "אוסטרליה" };
+const saved = (() => { try { return JSON.parse(localStorage.getItem("reembir_customer") || "{}"); } catch { return {}; } })();
+
+function totals(cart) {
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const shipping = cfg.freeShippingOver > 0 && subtotal >= cfg.freeShippingOver ? 0 : cfg.shippingFee;
+  return { subtotal, shipping, total: subtotal + shipping };
+}
+
+function render() {
+  const cart = getCart();
+  if (!cart.length) { root.innerHTML = `<p class="empty">העגלה ריקה. <a href="/">להמשך קניות</a></p>`; return; }
+  const t = totals(cart);
+  root.innerHTML = `<div class="cart-layout">
+  <div>
+    <div class="panel" id="lines">${cart.map((i, idx) => `<div class="line">
+      <img src="${esc(i.image)}" alt="">
+      <div><a href="/product.html?id=${encodeURIComponent(i.productId)}">${esc(i.title)}</a>
+        <div class="meta">${esc(i.variantName || "")}</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+          <div class="qty"><button data-a="dec" data-i="${idx}">−</button><input value="${i.qty}" readonly><button data-a="inc" data-i="${idx}">+</button></div>
+          <button class="link-btn" data-a="del" data-i="${idx}">הסרה</button></div></div>
+      <div class="price">${money(i.price * i.qty, cfg.currency)}</div></div>`).join("")}</div>
+    <div class="panel" style="margin-top:20px">
+      <h2 style="margin-top:0">פרטי משלוח</h2>
+      <form class="fields" id="form" autocomplete="on">
+        <label class="full">שם מלא<input name="name" autocomplete="name" required></label>
+        <label>אימייל<input name="email" type="email" autocomplete="email" required></label>
+        <label>טלפון נייד<input name="phone" type="tel" autocomplete="tel" required></label>
+        <label class="full">רחוב ומספר בית<input name="address1" autocomplete="address-line1" required></label>
+        <label class="full">דירה / כניסה / קומה (לא חובה)<input name="address2" autocomplete="address-line2"></label>
+        <label>עיר<input name="city" autocomplete="address-level2" required></label>
+        <label>מיקוד<input name="zip" autocomplete="postal-code" inputmode="numeric"></label>
+        <label ${cfg.countries.length > 1 ? "" : "hidden"}>מדינה<select name="country">${cfg.countries.map((c) => `<option value="${c}">${COUNTRY_NAMES[c] || c}</option>`).join("")}</select></label>
+        <label ${cfg.countries.length > 1 ? "" : "hidden"}>מחוז / מדינה (לא חובה)<input name="state" autocomplete="address-level1"></label>
+      </form>
+      <p class="muted" style="font-size:14px;margin-bottom:0">מומלץ למלא את הכתובת באנגלית — כך היא תגיע לחברת השילוח בצורה המדויקת ביותר.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">סיכום</h2>
+    <div class="totals">
+      <div><span>סכום ביניים</span><span>${money(t.subtotal, cfg.currency)}</span></div>
+      <div><span>משלוח</span><span>${t.shipping ? money(t.shipping, cfg.currency) : "חינם"}</span></div>
+      <div class="grand"><span>סה״כ לתשלום</span><span>${money(t.total, cfg.currency)}</span></div>
+    </div>
+    ${cfg.freeShippingOver > 0 && t.shipping ? `<p class="notice">משלוח חינם בקנייה מעל ${money(cfg.freeShippingOver, cfg.currency)}</p>` : ""}
+    <p class="error" id="err" hidden></p>
+    <div id="paypal" style="margin-top:16px"></div>
+    <p class="muted" style="font-size:13px">בלחיצה על תשלום אתם מאשרים את <a href="/terms.html">התקנון</a> ואת <a href="/returns.html">מדיניות ההחזרות</a>. זמן משלוח משוער 10–25 ימי עסקים.</p>
+  </div></div>`;
+  const form = document.getElementById("form");
+  for (const [k, v] of Object.entries(saved)) if (form.elements[k] && v) form.elements[k].value = v;
+  form.oninput = () => { try { localStorage.setItem("reembir_customer", JSON.stringify(Object.fromEntries(new FormData(form)))); } catch {} };
+  renderPaypal();
+}
+
+root.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  const cart = getCart(); const i = +b.dataset.i;
+  if (b.dataset.a === "inc") cart[i].qty = Math.min(20, cart[i].qty + 1);
+  if (b.dataset.a === "dec") cart[i].qty = Math.max(1, cart[i].qty - 1);
+  if (b.dataset.a === "del") cart.splice(i, 1);
+  saveCart(cart); render();
+});
+
+let sdk;
+function loadSdk() {
+  sdk ||= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.paypalClientId)}&currency=${cfg.currency}&intent=capture&components=buttons&locale=he_IL`;
+    s.onload = resolve; s.onerror = () => reject(new Error("לא ניתן לטעון את PayPal"));
+    document.head.append(s);
+  });
+  return sdk;
+}
+
+function showError(msg) { const e = document.getElementById("err"); e.hidden = !msg; e.textContent = msg || ""; }
+
+async function renderPaypal() {
+  if (!cfg.paypalClientId) { showError("התשלום עדיין לא הוגדר בחנות."); return; }
+  try { await loadSdk(); } catch (e) { showError(e.message); return; }
+  const el = document.getElementById("paypal"); if (!el) return;
+  let ourOrderId;
+  window.paypal.Buttons({
+    style: { layout: "vertical", shape: "rect", label: "pay" },
+    onClick: (data, actions) => {
+      const form = document.getElementById("form");
+      if (!form.reportValidity()) { showError("נא למלא את פרטי המשלוח"); return actions.reject(); }
+      showError(""); return actions.resolve();
+    },
+    createOrder: async () => {
+      const form = document.getElementById("form");
+      const customer = Object.fromEntries(new FormData(form));
+      const items = getCart().map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }));
+      try {
+        const r = await api("/api/checkout/create", { method: "POST", body: { items, customer } });
+        ourOrderId = r.orderId;
+        return r.paypalOrderId;
+      } catch (e) { showError(e.message); throw e; }
+    },
+    onApprove: async (data, actions) => {
+      showError("");
+      document.getElementById("paypal").style.opacity = ".4";
+      try {
+        const r = await api("/api/checkout/capture", { method: "POST", body: { orderId: ourOrderId, paypalOrderId: data.orderID } });
+        saveCart([]);
+        location.href = `/order.html?id=${encodeURIComponent(r.orderId)}&t=${encodeURIComponent(r.token)}&new=1`;
+      } catch (e) {
+        document.getElementById("paypal").style.opacity = "";
+        if (e.data?.restart) return actions.restart();
+        showError(e.message);
+      }
+    },
+    onError: (err) => { console.error(err); if (!document.getElementById("err").textContent) showError("אירעה שגיאה בתשלום. נסו שוב."); },
+  }).render(el);
+}
+
+render();
+
+</script>
+</body>
+</html>

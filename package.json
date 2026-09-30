@@ -1,0 +1,14 @@
+{
+  "name": "reembir-shop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public --d1 DB",
+    "db:init:local": "wrangler d1 execute reembir-shop --local --file=schema.sql",
+    "db:init": "wrangler d1 execute reembir-shop --remote --file=schema.sql",
+    "deploy": "wrangler pages deploy public"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

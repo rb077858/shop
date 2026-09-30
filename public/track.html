@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מעקב הזמנה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+</head>
+<body>
+<main><div class="wrap">
+<div class="prose"><h1>מעקב הזמנה</h1>
+<p class="muted">הזינו את מספר ההזמנה (מופיע במייל האישור) ואת כתובת האימייל שאיתה הזמנתם.</p>
+<form class="panel fields" id="f" style="max-width:520px">
+<label class="full">מספר הזמנה<input name="id" required placeholder="R..." dir="ltr"></label>
+<label class="full">אימייל<input name="email" type="email" required dir="ltr"></label>
+<div class="full"><button class="btn">חיפוש</button><p class="error" id="err" hidden></p></div>
+</form></div>
+</div></main>
+<script type="module">
+import { getConfig, api, money, esc, getCart, saveCart, addToCart, sanitize } from '/assets/app.js';
+
+document.getElementById("f").onsubmit = async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("err");
+  try {
+    const r = await api("/api/order", { method: "POST", body: Object.fromEntries(new FormData(e.target)) });
+    location.href = `/order.html?id=${encodeURIComponent(r.id)}&t=${encodeURIComponent(r.token)}`;
+  } catch (x) { err.hidden = false; err.textContent = x.message; }
+};
+
+</script>
+</body>
+</html>
