@@ -7,10 +7,10 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "reembir-shop"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "5b1482d9-6c32-402c-8f23-cdfcb4d2a70c"
 
 [vars]
-STORE_NAME = "Reembir"
+STORE_NAME = "Reembir Shop"
 SITE_URL = "https://reembir.com"
 STORE_CURRENCY = "ILS"
 SHIP_TO_COUNTRY = "IL"
