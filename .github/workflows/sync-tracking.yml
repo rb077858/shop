@@ -1,5 +1,5 @@
 # Pulls tracking numbers from AliExpress every 6 hours and emails customers when their order ships.
-# Needs repository secrets: SITE_URL (e.g. https://reembir.com) and ADMIN_PASSWORD.
+# Needs repository secrets: SITE_URL (e.g. https://shop.reembir.com) and ADMIN_PASSWORD.
 name: Sync AliExpress tracking
 on:
   schedule:

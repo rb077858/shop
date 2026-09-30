@@ -11,7 +11,7 @@ database_id = "5b1482d9-6c32-402c-8f23-cdfcb4d2a70c"
 
 [vars]
 STORE_NAME = "Reembir Shop"
-SITE_URL = "https://reembir.com"
+SITE_URL = "https://shop.reembir.com"
 STORE_CURRENCY = "ILS"
 SHIP_TO_COUNTRY = "IL"
 # רשימת מדינות שאליהן מותר לשלוח, מופרדות בפסיק (למשל "IL,US,GB")
