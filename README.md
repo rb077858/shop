@@ -1,6 +1,7 @@
 # Reembir — המדריך המלא להקמת החנות
 
 החנות שלך רצה על Cloudflare, מקבלת תשלומים ב-PayPal ומעבירה את ההזמנות לאליאקספרס דרך **DSers** (חנות מסוג CSV).
+כתובת החנות: **https://shop.reembir.com** (הדומיין הראשי reembir.com נשאר פנוי לכל שימוש אחר).
 המדריך הזה מסביר את כל ההקמה דרך הדפדפן בלבד, בלי להתקין שום דבר ובלי שורת פקודה.
 
 ---
@@ -14,7 +15,7 @@
 5. [שלב ג׳ — עדכון קובץ ההגדרות ב-GitHub](#5-שלב-ג--עדכון-קובץ-ההגדרות-ב-github)
 6. [שלב ד׳ — העלאת האתר ל-Cloudflare Pages](#6-שלב-ד--העלאת-האתר-ל-cloudflare-pages)
 7. [שלב ה׳ — הגדרת סיסמאות ומפתחות](#7-שלב-ה--הגדרת-סיסמאות-ומפתחות)
-8. [שלב ו׳ — חיבור הדומיין reembir.com](#8-שלב-ו--חיבור-הדומיין-reembircom)
+8. [שלב ו׳ — חיבור הכתובת shop.reembir.com](#8-שלב-ו--חיבור-הכתובת-shopreembircom)
 9. [שלב ז׳ — PayPal](#9-שלב-ז--paypal)
 10. [שלב ח׳ — מיילים ללקוחות](#10-שלב-ח--מיילים-ללקוחות)
 11. [שלב ט׳ — DSers: חיבור החנות](#11-שלב-ט--dsers-חיבור-החנות)
@@ -29,13 +30,13 @@
 ## 1. איך הכל עובד — התמונה הגדולה
 
 ```
- לקוח באתר reembir.com
+ לקוח באתר shop.reembir.com
         │  בוחר מוצר, ממלא כתובת, משלם ב-PayPal / כרטיס אשראי
         ▼
  הכסף נכנס לחשבון ה-PayPal העסקי שלך  ──►  ההזמנה נשמרת במערכת  ──►  אתה מקבל התראה במייל
         │
         ▼
- בדף הניהול (reembir.com/admin) ← לשונית DSers ← "הורדת קובץ הזמנות"
+ בדף הניהול (shop.reembir.com/admin) ← לשונית DSers ← "הורדת קובץ הזמנות"
         │
         ▼
  מעלה את הקובץ ל-DSers  ──►  DSers מזמין מאליאקספרס עם כתובת הלקוח  ──►  אתה משלם לספק באליאקספרס
@@ -178,14 +179,21 @@
 
 ---
 
-## 8. שלב ו׳ — חיבור הדומיין reembir.com
+## 8. שלב ו׳ — חיבור הכתובת shop.reembir.com
 
-1. **Workers & Pages** ← `reembir-shop` ← **Custom domains** ← **Set up a custom domain**.
-2. הכנס `reembir.com` ← **Continue** ← **Activate domain**.
-3. חזור על אותו תהליך עם `www.reembir.com`.
-4. תוך כמה דקות האתר יעבוד בכתובת <https://reembir.com>. גם תעודת האבטחה (HTTPS) מוגדרת אוטומטית.
+החנות תהיה בכתובת משנה (subdomain) של הדומיין שלך: `shop.reembir.com`. הדומיין הראשי `reembir.com` לא משתנה ולא מושפע. אם יש עליו אתר או מייל, הם ממשיכים לעבוד כרגיל.
 
-> אם כבר יש רשומת DNS ל-reembir.com (למשל מאתר ישן), Cloudflare יבקש להחליף אותה. אשר.
+1. **Workers & Pages** ← `reembir-shop` ← הלשונית **Custom domains** ← **Set up a custom domain**.
+2. הכנס `shop.reembir.com` (בדיוק ככה, בלי `https://`) ← **Continue**.
+3. Cloudflare יציג את רשומת ה-DNS שהוא עומד ליצור (סוג `CNAME`, שם `shop`, יעד `reembir-shop.pages.dev`). לחץ **Activate domain**.
+4. הסטטוס יהיה בהתחלה **Verifying / Initializing**. תוך כמה דקות (לפעמים עד חצי שעה) הוא יהפוך ל-**Active**.
+   גם תעודת האבטחה (HTTPS) מוגדרת אוטומטית.
+5. פתח את <https://shop.reembir.com>. אמורה להופיע החנות.
+
+> **שים לב:** אל תוסיף ידנית רשומת DNS בשם `shop` לפני השלב הזה. אם כבר קיימת כזו (למשל מניסיון קודם),
+> מחק אותה קודם: הדומיין `reembir.com` ← **DNS** ← **Records** ← השורה `shop` ← **Edit** ← **Delete**. אחר כך חזור לסעיף 1.
+
+> **ב-`wrangler.toml` כבר מוגדר** `SITE_URL = "https://shop.reembir.com"`. הכתובת הזו משמשת לקישורים במיילים ללקוחות. אם תחליף כתובת בעתיד, עדכן גם שם.
 
 ---
 
@@ -221,7 +229,7 @@
 ה-Webhook מבטיח שהתשלום יירשם גם אם הלקוח סגר את הדפדפן בדיוק ברגע התשלום.
 
 1. באפליקציה שיצרת (Live) גלול ל-**Webhooks** ← **Add Webhook**.
-2. **Webhook URL:** `https://reembir.com/api/paypal/webhook`
+2. **Webhook URL:** `https://shop.reembir.com/api/paypal/webhook`
 3. סמן את האירועים:
    - `Checkout order approved`
    - `Payment capture completed`
@@ -280,7 +288,7 @@ DSers מקבל קבצים במבנה מסוים. כדי שהקבצים שהחנ�
 2. הורד את שתי התבניות:
    - תבנית מוצרים: **import_products** (לפעמים כפתור "Download template" בחלק של Products)
    - תבנית הזמנות: **import_orders** (כפתור "Download template" בחלק של Orders)
-3. בדף הניהול שלך: `reembir.com/admin` ← לשונית **DSers** ← **שלב 0**:
+3. בדף הניהול שלך: `shop.reembir.com/admin` ← לשונית **DSers** ← **שלב 0**:
    - ב"תבנית מוצרים" לחץ **Choose File** ובחר את `import_products`.
    - ב"תבנית הזמנות" לחץ **Choose File** ובחר את `import_orders`.
 4. יופיע ✔ **נטענה** ליד כל תבנית, ומתחתיה רשימת העמודות. אם כתוב "עמודות שיישארו ריקות", אלה עמודות שהמערכת לא מכירה (למשל מספר הזמנה באליאקספרס או מספר מעקב). זה תקין, כי DSers ממלא אותן בעצמו.
@@ -461,14 +469,14 @@ DSers דורש שהעיר והמחוז יתאימו לרשימה של אליאק
 
 החנות יודעת לעבוד גם מול ה-API הרשמי של אליאקספרס. זה מאפשר ייבוא מוצר מקישור, כולל כל התמונות והאפשרויות, הזמנה בלחיצה אחת ומשיכת מעקב אוטומטית כל 6 שעות.
 צריך להירשם כמפתח ב-<https://openservice.aliexpress.com>, ליצור אפליקציה מסוג Dropshipping ולחכות לאישור.
-לאחר האישור: הוסף סודות `AE_APP_KEY` ו-`AE_APP_SECRET`, הגדר באפליקציה Callback URL `https://reembir.com/api/ae/callback`,
+לאחר האישור: הוסף סודות `AE_APP_KEY` ו-`AE_APP_SECRET`, הגדר באפליקציה Callback URL `https://shop.reembir.com/api/ae/callback`,
 והתחבר מדף הניהול ← **הגדרות** ← **חיבור חשבון אליאקספרס**.
-למשיכת מעקב אוטומטית: ב-GitHub ← **Settings** ← **Secrets and variables** ← **Actions** הוסף `SITE_URL` (`https://reembir.com`) ו-`ADMIN_PASSWORD`.
+למשיכת מעקב אוטומטית: ב-GitHub ← **Settings** ← **Secrets and variables** ← **Actions** הוסף `SITE_URL` (`https://shop.reembir.com`) ו-`ADMIN_PASSWORD`.
 
 ### 16.3 שכבת הגנה נוספת לדף הניהול
 
 ב-Cloudflare ← **Zero Trust** ← **Access** ← **Applications** ← **Add an application** ← **Self-hosted**:
-דומיין `reembir.com`, נתיב `admin`, מדיניות **Allow** עם האימייל שלך. זה חינם עד 50 משתמשים.
+דומיין `shop.reembir.com`, נתיב `admin`, מדיניות **Allow** עם האימייל שלך. זה חינם עד 50 משתמשים.
 מעכשיו, לפני דף הניהול תתבקש להזין קוד שנשלח למייל שלך.
 
 ---
