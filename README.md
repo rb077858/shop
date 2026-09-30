@@ -140,8 +140,13 @@
 
 ## 6. שלב ד׳ — העלאת האתר ל-Cloudflare Pages
 
-1. ב-Cloudflare: בתפריט הצד **Workers & Pages** ← **Create** (או **Create application**).
-2. בחר בלשונית **Pages** ← **Connect to Git** (או **Import an existing Git repository**).
+> ⚠️ **חשוב: צריך ליצור פרויקט מסוג Pages, לא Worker.** במסך היצירה של Cloudflare, ברירת המחדל היא **Worker**.
+> אם נוצר Worker, האתר יציג רק **"Hello world"** או שגיאה, והחנות לא תעבוד.
+
+1. ב-Cloudflare: בתפריט הצד **Workers & Pages** (לפעמים **Compute (Workers)**) ← **Create** (או **Create application**).
+2. במסך שנפתח, **אל תבחר** "Hello World" ו**אל תבחר** "Import a repository" שבחלק של Workers.
+   חפש את הלשונית **Pages**, או את הקישור הקטן בתחתית המסך **"Looking to deploy Pages? Get started"**, ולחץ עליו.
+   אחר כך בחר **Import an existing Git repository** (או **Connect to Git**).
 3. אם זו הפעם הראשונה, תתבקש לחבר את GitHub. אשר גישה לריפו `shop`.
 4. בחר את הריפו `shop` ← **Begin setup**.
 5. מלא:
@@ -151,6 +156,7 @@
    - **Build command:** השאר ריק
    - **Build output directory:** `public`
 6. לחץ **Save and Deploy**. אחרי דקה-שתיים תקבל כתובת זמנית כמו `reembir-shop.pages.dev`.
+   **איך יודעים שזה נכון:** הכתובת נגמרת ב-**`.pages.dev`**. אם היא נגמרת ב-`.workers.dev`, נוצר Worker בטעות. ראה "האתר מציג Hello world" בפרק 15.
 7. פתח את הכתובת. אמור להופיע דף החנות עם הכיתוב "עדיין אין מוצרים בחנות". זה תקין.
 
 > אם הבנייה נכשלה עם שגיאה על `database_id`: חזור לשלב ג׳ ובדוק שהדבקת את ה-ID הנכון, בלי רווחים.
@@ -417,6 +423,15 @@ DSers מקבל קבצים במבנה מסוים. כדי שהקבצים שהחנ�
 ---
 
 ## 15. פתרון בעיות
+
+**האתר מציג "Hello world" (או "Hello World!")**
+נוצר בטעות **Worker** במקום פרויקט **Pages**, והכתובת מחוברת אליו. כך מתקנים:
+1. **Workers & Pages** ← לחץ על הפרויקט שנוצר (בדרך כלל מופיע עם אייקון של Worker, וכתובת `.workers.dev`).
+2. **Settings** ← **Domains & Routes**. אם מופיע שם `shop.reembir.com`, לחץ `...` ← **Remove** / **Delete**.
+3. (רשות) באותו Worker: **Settings** ← למטה **Delete** כדי למחוק אותו.
+4. צור פרויקט Pages לפי פרק 6 בדיוק, כולל האזהרה בתחילתו. אם השם `reembir-shop` תפוס, תן שם אחר, למשל `reembir-store`.
+5. הגדר שוב את הסודות (פרק 7) **בפרויקט ה-Pages החדש**, ואז חבר אליו את `shop.reembir.com` (פרק 8).
+   אם Cloudflare אומר שכבר יש רשומת DNS בשם `shop`: הדומיין `reembir.com` ← **DNS** ← **Records** ← מחק את השורה `shop`, ונסה שוב.
 
 **האתר מציג "התשלום עדיין לא הוגדר בחנות"**
 חסר `PAYPAL_CLIENT_ID`, או שלא העלית מחדש אחרי שהוספת אותו (**Deployments** ← **Retry deployment**).
