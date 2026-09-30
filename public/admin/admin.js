@@ -200,6 +200,7 @@ async function productEditor(id) {
   const vRow = (v, i) => `<tr data-i="${i}"><td>${v.image ? `<img src="${esc(v.image)}" alt="">` : ''}</td>
     <td><input data-f="name" value="${esc(v.name)}"></td><td><input data-f="price" type="number" step="0.01" value="${v.price ?? ''}" style="width:100px"></td>
     <td class="hide-sm">${v.cost != null ? '$' + v.cost : ''}${v.stock != null ? ` · מלאי ${v.stock}` : ''}</td>
+    <td class="hide-sm"><input data-f="skuAttr" dir="ltr" value="${esc(v.skuAttr || '')}" placeholder="14:173;200007763:201336100" style="min-width:160px;font-size:13px"></td>
     <td><input type="checkbox" data-f="disabled" ${v.disabled ? 'checked' : ''} style="width:auto"></td><td><button class="link-btn" data-del="${i}">מחק</button></td></tr>`;
   app.innerHTML = `<p><a href="#products">→ חזרה למוצרים</a></p><h1>${id === 'new' ? 'מוצר חדש' : 'עריכת מוצר'}</h1>
   <form class="stack" id="pf">
@@ -207,7 +208,9 @@ async function productEditor(id) {
       <label class="full" style="grid-column:1/-1">שם המוצר (מומלץ לתרגם לעברית)<input name="title" value="${esc(p.title)}" required></label>
       <label>מחיר מכירה (${status.config.currency})<input name="price" type="number" step="0.01" value="${p.price ?? ''}" required></label>
       <label>מחיר לפני הנחה (להצגה, לא חובה)<input name="compareAtPrice" type="number" step="0.01" value="${p.compareAtPrice ?? ''}"></label>
-      <label>מזהה מוצר באליאקספרס<input name="aeProductId" dir="ltr" value="${esc(p.aeProductId || '')}" placeholder="1005..."></label>
+      <label style="grid-column:1/-1">קישור למוצר באליאקספרס (מדביקים את הקישור כמו שהוא, גם קישור מקוצר מהאפליקציה)
+        <input name="aeProductId" dir="ltr" value="${p.aeProductId ? `https://www.aliexpress.com/item/${esc(p.aeProductId)}.html` : ''}" placeholder="https://www.aliexpress.com/item/1005....html">
+        <span id="aeLinkStatus" class="muted" style="font-size:13px">${p.aeProductId ? `✔ מזהה מוצר: <span dir="ltr">${esc(p.aeProductId)}</span>` : ''}</span></label>
       <label>עלות בדולרים (לחישוב רווח)<input name="costUsd" type="number" step="0.01" value="${p.costUsd ?? ''}"></label>
       <label>סדר הצגה (מספר קטן = ראשון)<input name="sort" type="number" value="${p.sort || 0}"></label>
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="active" ${p.active !== false ? 'checked' : ''} style="width:auto"> מוצג בחנות</label>
@@ -215,8 +218,9 @@ async function productEditor(id) {
       <label style="grid-column:1/-1">תיאור (HTML מותר)<textarea name="description" rows="8" dir="auto">${esc(p.description || '')}</textarea></label>
     </div>
     <div class="panel"><h2 style="margin-top:0">אפשרויות (צבע / מידה)</h2>
-      <p class="muted">מוצר בלי אפשרויות — השאר ריק. סמן "אזל" כדי להסתיר אפשרות.</p>
-      <div class="overflow"><table class="list vt"><thead><tr><th></th><th>שם</th><th>מחיר</th><th class="hide-sm">עלות</th><th>אזל</th><th></th></tr></thead><tbody id="vbody">${(p.variants || []).map(vRow).join('')}</tbody></table></div>
+      <p class="muted">מוצר בלי אפשרויות — השאר ריק. סמן "אזל" כדי להסתיר אפשרות.
+      "SKU באליאקספרס" לא חובה: החיבור בין האפשרויות שלך לאפשרויות של הספק נעשה בתוך DSers (Mapping). אם תמלא, הוא ייכנס לעמודת Supplier SKU בקובץ ל-DSers.</p>
+      <div class="overflow"><table class="list vt"><thead><tr><th></th><th>שם</th><th>מחיר</th><th class="hide-sm">עלות</th><th class="hide-sm">SKU באליאקספרס (לא חובה)</th><th>אזל</th><th></th></tr></thead><tbody id="vbody">${(p.variants || []).map(vRow).join('')}</tbody></table></div>
       <p><button type="button" class="btn small secondary" id="addV">+ הוסף אפשרות</button> <button type="button" class="btn small secondary" id="bulk">החל מחיר ראשי על כל האפשרויות</button></p>
     </div>
     <div class="toolbar"><button class="btn">שמירה</button>${id !== 'new' ? '<button type="button" class="btn danger" id="del">מחיקת מוצר</button>' : ''}</div>
@@ -228,16 +232,35 @@ async function productEditor(id) {
     v.name = tr.querySelector('[data-f=name]').value;
     v.price = tr.querySelector('[data-f=price]').value;
     v.disabled = tr.querySelector('[data-f=disabled]').checked;
-    if (!v.skuAttr && Object.keys(v.options || {}).length <= 1) v.options = { 'אפשרות': v.name };
+    v.skuAttr = tr.querySelector('[data-f=skuAttr]').value.trim();
+    if (!Object.keys(v.options || {}).length || 'אפשרות' in v.options) v.options = { 'אפשרות': v.name };
   });
   const redraw = () => (vbody.innerHTML = variants.map(vRow).join(''));
   vbody.onclick = (e) => { if (e.target.dataset.del != null) { readRows(); variants.splice(+e.target.dataset.del, 1); redraw(); } };
   document.getElementById('addV').onclick = () => { readRows(); variants.push({ id: String(Date.now()), name: '', price: document.querySelector('[name=price]').value, options: {} }); redraw(); };
   document.getElementById('bulk').onclick = () => { readRows(); const pr = document.querySelector('[name=price]').value; variants.forEach((v) => (v.price = pr)); redraw(); };
+  const linkInput = document.querySelector('[name=aeProductId]');
+  const linkStatus = document.getElementById('aeLinkStatus');
+  let resolving = null;
+  linkInput.onchange = () => {
+    const val = linkInput.value.trim();
+    if (!val) { linkStatus.textContent = ''; return; }
+    linkStatus.textContent = 'בודק את הקישור…';
+    resolving = api('/resolve-link', { method: 'POST', body: { url: val } }).then(({ aeProductId }) => {
+      if (aeProductId) {
+        linkInput.value = `https://www.aliexpress.com/item/${aeProductId}.html`;
+        linkStatus.innerHTML = `<span class="ok">✔ מזהה מוצר: <span dir="ltr">${esc(aeProductId)}</span></span> · <a href="${esc(linkInput.value)}" target="_blank" rel="noopener">פתיחה ↗</a>`;
+      } else {
+        linkStatus.innerHTML = '<span class="bad">לא הצלחתי לזהות מוצר מהקישור. פתח את המוצר בדפדפן במחשב והעתק את הכתובת משורת הכתובת (צריך להופיע בה /item/ ומספר ארוך).</span>';
+      }
+      return aeProductId;
+    }).catch(() => null);
+  };
   const del = document.getElementById('del');
   if (del) del.onclick = async () => { if (confirm('למחוק את המוצר?')) { await api(`/products/${id}`, { method: 'DELETE' }); location.hash = 'products'; } };
   document.getElementById('pf').onsubmit = async (e) => {
     e.preventDefault(); readRows();
+    if (resolving) await resolving;
     const f = e.target;
     const body = {
       title: f.title.value, price: f.price.value, compareAtPrice: f.compareAtPrice.value, aeProductId: f.aeProductId.value, costUsd: f.costUsd.value,
@@ -416,7 +439,7 @@ function productRows(products, headers) {
         productId: p.id,
         sku: skuOf(p.id, v?.id),
         supplierUrl: p.aeProductId ? `https://www.aliexpress.com/item/${p.aeProductId}.html` : '',
-        supplierSku: '',
+        supplierSku: v?.skuAttr || '',
         title: p.title,
         variantTitle: v?.name || '',
         price: v?.price ?? p.price,
