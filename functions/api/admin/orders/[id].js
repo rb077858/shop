@@ -10,7 +10,7 @@ export async function onRequestGet({ env, params }) {
   return json({ order: parseOrder(row, { admin: true }), events: results });
 }
 
-// PUT {status?, aeOrderIds?, tracking?: [{number, carrier}], notes?, notify?}
+// PUT {status?, aeOrderIds?, tracking?: [{number, carrier}], notes?, notify?, name?, phone?, address?}
 export async function onRequestPut({ request, env, params }) {
   const row = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(params.id).first();
   if (!row) return bad('Not found', 404);
@@ -25,8 +25,23 @@ export async function onRequestPut({ request, env, params }) {
         .map((t) => ({ number: String(t.number).trim(), carrier: String(t.carrier || '').trim(), url: trackingUrl(String(t.number).trim()) }))
     : cur.tracking;
   const notes = b.notes ?? cur.notes;
-  await env.DB.prepare("UPDATE orders SET status = ?, ae_order_ids = ?, tracking = ?, notes = ?, updated_at = datetime('now') WHERE id = ?")
-    .bind(status, JSON.stringify(aeOrderIds), JSON.stringify(tracking), notes, params.id)
+  const str = (v, max = 200) => String(v ?? '').trim().slice(0, max);
+  const name = b.name !== undefined ? str(b.name, 100) || cur.name : cur.name;
+  const phone = b.phone !== undefined ? str(b.phone, 30) || cur.phone : cur.phone;
+  const address = b.address && typeof b.address === 'object'
+    ? {
+        address1: str(b.address.address1) || cur.address.address1,
+        address2: str(b.address.address2),
+        city: str(b.address.city, 100) || cur.address.city,
+        state: str(b.address.state, 100),
+        zip: str(b.address.zip, 20),
+        country: str(b.address.country, 2).toUpperCase() || cur.address.country,
+      }
+    : cur.address;
+  await env.DB.prepare(
+    "UPDATE orders SET status = ?, ae_order_ids = ?, tracking = ?, notes = ?, name = ?, phone = ?, address = ?, updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(status, JSON.stringify(aeOrderIds), JSON.stringify(tracking), notes, name, phone, JSON.stringify(address), params.id)
     .run();
   await logEvent(env, params.id, `Admin update: status ${status}; AE ${aeOrderIds.join(',') || '-'}; tracking ${tracking.map((t) => t.number).join(',') || '-'}`);
   const newTracking = tracking.some((t) => !cur.tracking.find((x) => x.number === t.number));
